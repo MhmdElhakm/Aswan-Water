@@ -715,12 +715,12 @@
             </select>
           </div>
           <div class="form-group">
-            <label>مبنى</label>
-            <input type="text" id="building" placeholder="رقم أو اسم المبنى">
+            <label>رقم المبنى</label>
+            <input type="text" id="building" placeholder="رقم المبنى">
           </div>
           <div class="form-group">
-            <label>وحده</label>
-            <input type="text" id="unit" placeholder="رقم الوحدة">
+            <label>عدد الوحدات</label>
+            <input type="text" id="unit" placeholder="عدد الوحدات">
           </div>
           <div class="form-group">
             <label>رقم المشترك</label>
@@ -1229,8 +1229,8 @@
     function buildExcelData(data) {
       return data.map((r, i) => ({
         'م': i + 1,
-        'مبنى': r.building || '',
-        'وحده': r.unit || '',
+        'رقم المبني': r.building || '',
+        'عدد الوحدات': r.unit || '',
         'اسم المشترك': r.subName,
         'عنوان المشترك': r.subAddress || '',
         'نوع المشترك': r.subType || '',
