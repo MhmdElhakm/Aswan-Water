@@ -689,8 +689,8 @@
   </header>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('add')">➕ إضافة قراءة</button>
-    <button class="tab-btn" onclick="switchTab('list')">📋 سجل القراءات</button>
+    <button class="tab-btn active" onclick="switchTab('add')">➕ إضافة</button>
+    <button class="tab-btn" onclick="switchTab('list')">📋 السجل</button>
     <button class="tab-btn" onclick="switchTab('report')">📊 التقارير</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ الإعدادات</button>
   </div>
@@ -716,15 +716,15 @@
           </div>
           <div class="form-group">
             <label>رقم المبنى</label>
-            <input type="text" id="building" placeholder="رقم المبنى">
+            <input type="number" id="building" placeholder="رقم المبنى">
           </div>
           <div class="form-group">
             <label>عدد الوحدات</label>
-            <input type="text" id="unit" placeholder="عدد الوحدات">
+            <input type="number" id="unit" placeholder="عدد الوحدات">
           </div>
           <div class="form-group">
             <label>رقم المشترك</label>
-            <input type="text" id="subCode" placeholder="رقم الاشتراك" oninput="autoFillSubscriber()">
+            <input type="number" id="subCode" placeholder="رقم الاشتراك" oninput="autoFillSubscriber()">
           </div>
           <div class="form-group">
             <label>اسم المشترك *</label>
@@ -906,7 +906,7 @@
   </main>
 
   <div class="copyright">
-    <p>© 2026 شركة مياه الشرب والصرف الصحي بدراو — جميع الحقوق محفوظة</p>
+    <p>© 2026 شركة مياه الشرب والصرف الصحي بدراو</p>
     <p class="developer-credit">تم البرمجة بواسطة <a href="https://www.facebook.com/MhmdElhakm" target="_blank"
         title="للتواصل مع المبرمج">محمد سعيد الحاكم</a></p>
   </div>
@@ -916,7 +916,7 @@
   <script>
     // ================== STATE ==================
     let readings = JSON.parse(localStorage.getItem('waterReadings') || '[]');
-    let settings = JSON.parse(localStorage.getItem('waterSettings') || '{"collectors":["حسين البدري "," محمود ربيع"],"areas":[" نجع العرب"," الكروم"],"pricePerM3":1.5,"orgName":"شركة مياه الشرب والصرف الصحي بدراو"}');
+    let settings = JSON.parse(localStorage.getItem('waterSettings') || '{"collectors":["حسين البدري "," محمود ربيع"],"areas":[" نجع العرب"," 1007"],"pricePerM3":1.5,"orgName":"شركة مياه الشرب والصرف الصحي بدراو"}');
     let currentEditId = null;
 
     // ================== INIT ==================
