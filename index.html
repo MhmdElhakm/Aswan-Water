@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام قراءة عدادات المياه</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #0077B6;
+      --primary-dark: #005F92;
+      --secondary: #00B4D8;
+      --accent: #90E0EF;
+      --success: #06D6A0;
+      --warning: #FFB703;
+      --danger: #EF233C;
+      --bg: #F0F8FF;
+      --surface: #FFFFFF;
+      --surface2: #E8F4FD;
+      --text: #03045E;
+      --text-muted: #5A7FA0;
+      --border: #BDE0FE;
+      --shadow: 0 4px 24px rgba(0, 119, 182, 0.10);
+      --radius: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, #023E8A 100%);
+      color: white;
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0, 119, 182, 0.3);
+    }
+
+    .header-inner {
+      max-width: 900px;
+      margin: auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .logo-text h1 {
+      font-family: 'Tajawal', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-text p {
+      font-size: 11px;
+      opacity: 0.75;
+      font-weight: 400;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .stat-badge {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      min-width: 70px;
+    }
+
+    .stat-badge .num {
+      font-family: 'Tajawal', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .stat-badge .lbl {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    /* TABS */
+    .tabs {
+      max-width: 900px;
+      margin: 24px auto 0;
+      padding: 0 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      padding: 10px 22px;
+      border: none;
+      background: var(--surface);
+      color: var(--text-muted);
+      border-radius: 40px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 16px rgba(0, 119, 182, 0.35);
+    }
+
+    .tab-btn:hover:not(.active) {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* MAIN */
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 16px 40px;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-family: 'Tajawal', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* FORM */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input,
+    select,
+    textarea {
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      transition: all 0.2s;
+      outline: none;
+      direction: rtl;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.10);
+    }
+
+    input[type="number"] {
+      direction: ltr;
+      text-align: right;
+    }
+
+    .consumption-display {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .consumption-display .big-num {
+      font-family: 'Tajawal', sans-serif;
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .consumption-display .unit {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 14px rgba(0, 119, 182, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 119, 182, 0.45);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #04A882);
+      color: white;
+      box-shadow: 0 4px 14px rgba(6, 214, 160, 0.35);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning), #E09A00);
+      color: white;
+      box-shadow: 0 4px 14px rgba(255, 183, 3, 0.35);
+    }
+
+    .btn-danger {
+      background: none;
+      color: var(--danger);
+      border: 1.5px solid var(--danger);
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 7px 14px;
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    /* SEARCH */
+    .search-bar {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding-right: 44px;
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    /* TABLE */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, var(--primary) 0%, #023E8A 100%);
+      color: white;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover {
+      background: var(--surface2);
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      vertical-align: middle;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .status-normal {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+
+    .status-high {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    .status-very-high {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
+    .status-zero {
+      background: #E5E7EB;
+      color: #374151;
+    }
+
+    /* EMPTY */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1A1A2E;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* COPYRIGHT */
+    .copyright {
+      text-align: center;
+      padding: 24px 16px;
+      margin-top: 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .copyright p {
+      margin-bottom: 4px;
+    }
+
+    .developer-credit a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+
+    .developer-credit a:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+
+    /* SUMMARY CARDS */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .summary-card .s-icon {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .s-num {
+      font-family: 'Tajawal', sans-serif;
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .summary-card .s-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* FILTERS */
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filters select,
+    .filters input {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    /* PHOTO UPLOAD */
+    .photo-upload {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .photo-upload:hover {
+      border-color: var(--primary);
+      background: var(--surface2);
+    }
+
+    .photo-upload input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .photo-upload .ph-icon {
+      font-size: 32px;
+      color: var(--text-muted);
+    }
+
+    .photo-upload p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .photo-preview {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .header-stats {
+        display: none;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+
+    /* ANIMATION */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .section.active {
+      animation: fadeIn 0.25s ease;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+
+      header,
+      .tabs,
+      .actions,
+      .btn {
+        display: none !important;
+      }
+
+      .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .info-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 6px 0;
+    }
+
+    .info-row strong {
+      color: var(--text);
+    }
+
+    .highlight-row {
+      background: rgba(0, 119, 182, 0.04);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 4px 0;
+    }
+
+    #readingDate {
+      direction: ltr;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">💧</div>
+        <div class="logo-text">
+          <h1>نظام عدادات المياه</h1>
+          <p>قراءة وتسجيل ومتابعة الاستهلاك</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-badge">
+          <div class="num" id="hdr-total">0</div>
+          <div class="lbl">إجمالي القراءات</div>
+        </div>
+        <div class="stat-badge">
+          <div class="num" id="hdr-today">0</div>
+          <div class="lbl">قراءات اليوم</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('add')">➕ إضافة قراءة</button>
+    <button class="tab-btn" onclick="switchTab('list')">📋 سجل القراءات</button>
+    <button class="tab-btn" onclick="switchTab('report')">📊 التقارير</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙️ الإعدادات</button>
+  </div>
+
+  <main>
+
+    <!-- ADD READING SECTION -->
+    <div class="section active" id="sec-add">
+      <div class="card">
+        <div class="card-title">💧 تسجيل قراءة عداد جديدة</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>رقم العداد *</label>
+            <input type="text" id="meterId" placeholder="مثال: M-0023" oninput="autoFillSubscriber()">
+          </div>
+          <div class="form-group">
+            <label>اسم المشترك *</label>
+            <input type="text" id="subName" placeholder="الاسم الكامل">
+          </div>
+          <div class="form-group">
+            <label>رقم المشترك</label>
+            <input type="text" id="subCode" placeholder="رقم الاشتراك">
+          </div>
+          <div class="form-group">
+            <label>المنطقة</label>
+            <select id="area">
+              <option value="">-- اختر المنطقة --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>تاريخ القراءة *</label>
+            <input type="date" id="readingDate">
+          </div>
+          <div class="form-group">
+            <label>اسم المحصّل</label>
+            <select id="collector">
+              <option value="">-- اختر المحصّل --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>القراءة السابقة (م³)</label>
+            <input type="number" id="prevReading" placeholder="0" min="0" oninput="calcConsumption()">
+          </div>
+          <div class="form-group">
+            <label>القراءة الحالية (م³) *</label>
+            <input type="number" id="currReading" placeholder="0" min="0" oninput="calcConsumption()">
+          </div>
+
+          <div class="form-group full">
+            <div class="consumption-display" id="consumptionBox">
+              <div class="big-num" id="consumptionVal">—</div>
+              <div class="unit">الاستهلاك (م³)</div>
+            </div>
+          </div>
+
+          <div class="form-group full">
+            <label>صورة العداد (اختياري)</label>
+            <div class="photo-upload" onclick="document.getElementById('meterPhoto').click()">
+              <input type="file" id="meterPhoto" accept="image/*" capture="environment" onchange="previewPhoto(event)">
+              <div class="ph-icon">📷</div>
+              <p>اضغط لالتقاط أو رفع صورة العداد</p>
+            </div>
+            <img id="photoPreview" class="photo-preview" alt="صورة العداد">
+          </div>
+
+          <div class="form-group full">
+            <label>ملاحظات</label>
+            <textarea id="notes" rows="2" placeholder="أي ملاحظات على الحالة أو العداد..."></textarea>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="saveReading()">💾 حفظ القراءة</button>
+          <button class="btn btn-success" onclick="saveAndExport()">📥 حفظ وتصدير Excel</button>
+          <button class="btn" style="background:var(--surface2);color:var(--text);" onclick="clearForm()">🔄 مسح
+            الحقول</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIST SECTION -->
+    <div class="section" id="sec-list">
+      <div class="card">
+        <div class="card-title">📋 سجل القراءات</div>
+
+        <div class="filters">
+          <input type="text" id="searchInput" placeholder="🔍 بحث باسم أو رقم عداد..." oninput="renderTable()">
+          <select id="filterArea" onchange="renderTable()">
+            <option value="">كل المناطق</option>
+          </select>
+          <select id="filterCollector" onchange="renderTable()">
+            <option value="">كل المحصّلين</option>
+          </select>
+          <input type="month" id="filterMonth" onchange="renderTable()" style="direction:ltr;">
+        </div>
+
+        <div id="tableContainer">
+          <div class="empty-state">
+            <div class="icon">📄</div>
+            <p>لا توجد قراءات مسجّلة بعد</p>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="actions">
+          <button class="btn btn-success" onclick="exportExcel()">📥 تصدير Excel</button>
+          <button class="btn btn-warning" onclick="exportFiltered()">📥 تصدير المحدد</button>
+          <button class="btn" style="background:#FEE2E2;color:var(--danger);" onclick="clearAll()">🗑️ حذف الكل</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT SECTION -->
+    <div class="section" id="sec-report">
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="card">
+        <div class="card-title">📊 ملخص الاستهلاك حسب المنطقة</div>
+        <div id="areaReport"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👤 أداء المحصّلين</div>
+        <div id="collectorReport"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS SECTION -->
+    <div class="section" id="sec-settings">
+      <div class="card">
+        <div class="card-title">👤 إدارة المحصّلين</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم المحصّل</label>
+            <input type="text" id="newCollector" placeholder="أدخل اسم المحصّل">
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="btn btn-primary" onclick="addCollector()" style="margin-top:20px;">➕ إضافة</button>
+          </div>
+        </div>
+        <div id="collectorList" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗺️ إدارة المناطق</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>اسم المنطقة</label>
+            <input type="text" id="newArea" placeholder="أدخل اسم المنطقة">
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <button class="btn btn-primary" onclick="addArea()" style="margin-top:20px;">➕ إضافة</button>
+          </div>
+        </div>
+        <div id="areaList" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ إعدادات عامة</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>سعر المتر المكعب (ريال/جنيه/دينار)</label>
+            <input type="number" id="pricePerM3" placeholder="مثال: 1.5" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>اسم الجهة / الشركة</label>
+            <input type="text" id="orgName" placeholder="مثال: شركة مياه الأهلية">
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn btn-primary" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💾 النسخ الاحتياطي</div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="exportBackup()">📤 تصدير نسخة احتياطية (JSON)</button>
+          <label class="btn btn-warning" style="cursor:pointer;">
+            📥 استيراد نسخة احتياطية
+            <input type="file" accept=".json" onchange="importBackup(event)" style="display:none;">
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="copyright">
+    <p>© 2026 شركة مياه الشرب والصرف الصحي بدراو — جميع الحقوق محفوظة</p>
+    <p class="developer-credit">تم البرمجة بواسطة <a href="https://www.facebook.com/MhmdElhakm" target="_blank"
+        title="للتواصل مع المبرمج">محمد سعيد الحاكم</a></p>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ================== STATE ==================
+    let readings = JSON.parse(localStorage.getItem('waterReadings') || '[]');
+    let settings = JSON.parse(localStorage.getItem('waterSettings') || '{"collectors":["حسين البدري "," محمود ربيع"],"areas":[" نجع العرب"," الكروم"],"pricePerM3":1.5,"orgName":"شركة مياه الشرب والصرف الصحي بدراو"}');
+
+    // ================== INIT ==================
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('readingDate').valueAsDate = new Date();
+      loadSettings();
+      updateHeader();
+      renderTable();
+      renderReports();
+    });
+
+    function loadSettings() {
+      // Collectors
+      const collSel = document.getElementById('collector');
+      const filterColl = document.getElementById('filterCollector');
+      collSel.innerHTML = '<option value="">-- اختر المحصّل --</option>';
+      filterColl.innerHTML = '<option value="">كل المحصّلين</option>';
+      settings.collectors.forEach(c => {
+        collSel.innerHTML += `<option>${c}</option>`;
+        filterColl.innerHTML += `<option>${c}</option>`;
+      });
+
+      // Areas
+      const areaSel = document.getElementById('area');
+      const filterArea = document.getElementById('filterArea');
+      areaSel.innerHTML = '<option value="">-- اختر المنطقة --</option>';
+      filterArea.innerHTML = '<option value="">كل المناطق</option>';
+      settings.areas.forEach(a => {
+        areaSel.innerHTML += `<option>${a}</option>`;
+        filterArea.innerHTML += `<option>${a}</option>`;
+      });
+
+      // Settings fields
+      document.getElementById('pricePerM3').value = settings.pricePerM3 || '';
+      document.getElementById('orgName').value = settings.orgName || '';
+
+      renderCollectorList();
+      renderAreaList();
+    }
+
+    // ================== TABS ==================
+    function switchTab(tab) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('sec-' + tab).classList.add('active');
+      event.target.classList.add('active');
+      if (tab === 'report') renderReports();
+    }
+
+    // ================== FORM ==================
+    function calcConsumption() {
+      const prev = parseFloat(document.getElementById('prevReading').value) || 0;
+      const curr = parseFloat(document.getElementById('currReading').value) || 0;
+      const consumption = curr - prev;
+      const box = document.getElementById('consumptionBox');
+      const val = document.getElementById('consumptionVal');
+
+      if (curr > 0) {
+        val.textContent = consumption >= 0 ? consumption.toFixed(1) : '⚠️ خطأ';
+        box.style.background = consumption < 0
+          ? 'linear-gradient(135deg, #EF233C, #C1121F)'
+          : consumption > 50
+            ? 'linear-gradient(135deg, #FFB703, #E09A00)'
+            : 'linear-gradient(135deg, #0077B6, #00B4D8)';
+      } else {
+        val.textContent = '—';
+        box.style.background = 'linear-gradient(135deg, #0077B6, #00B4D8)';
+      }
+    }
+
+    function previewPhoto(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = document.getElementById('photoPreview');
+        img.src = ev.target.result;
+        img.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function autoFillSubscriber() {
+      const id = document.getElementById('meterId').value;
+      const existing = readings.find(r => r.meterId === id);
+      if (existing) {
+        document.getElementById('subName').value = existing.subName || '';
+        document.getElementById('subCode').value = existing.subCode || '';
+        document.getElementById('area').value = existing.area || '';
+        document.getElementById('prevReading').value = existing.currReading || '';
+        calcConsumption();
+      }
+    }
+
+    function clearForm() {
+      ['meterId', 'subName', 'subCode', 'notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('prevReading').value = '';
+      document.getElementById('currReading').value = '';
+      document.getElementById('area').value = '';
+      document.getElementById('collector').value = '';
+      document.getElementById('readingDate').valueAsDate = new Date();
+      document.getElementById('consumptionVal').textContent = '—';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('meterPhoto').value = '';
+    }
+
+    function getFormData() {
+      const meterId = document.getElementById('meterId').value.trim();
+      const subName = document.getElementById('subName').value.trim();
+      const currReading = parseFloat(document.getElementById('currReading').value);
+      const prevReading = parseFloat(document.getElementById('prevReading').value) || 0;
+      const readingDate = document.getElementById('readingDate').value;
+      const collector = document.getElementById('collector').value;
+      const area = document.getElementById('area').value;
+      const subCode = document.getElementById('subCode').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+      const photoEl = document.getElementById('photoPreview');
+      const photoData = photoEl.style.display !== 'none' ? photoEl.src : '';
+
+      if (!meterId) { showToast('⚠️ يرجى إدخال رقم العداد'); return null; }
+      if (!subName) { showToast('⚠️ يرجى إدخال اسم المشترك'); return null; }
+      if (!readingDate) { showToast('⚠️ يرجى تحديد تاريخ القراءة'); return null; }
+      if (isNaN(currReading)) { showToast('⚠️ يرجى إدخال القراءة الحالية'); return null; }
+
+      const consumption = currReading - prevReading;
+      const price = settings.pricePerM3 || 0;
+      const amount = (consumption * price).toFixed(2);
+
+      return {
+        id: Date.now(),
+        meterId, subName, subCode, area, collector,
+        readingDate, prevReading, currReading, consumption,
+        amount, notes, photoData,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    function saveReading() {
+      const data = getFormData();
+      if (!data) return;
+      readings.unshift(data);
+      persist();
+      clearForm();
+      showToast('✅ تم حفظ القراءة بنجاح');
+      updateHeader();
+      renderTable();
+    }
+
+    function saveAndExport() {
+      const data = getFormData();
+      if (!data) return;
+      readings.unshift(data);
+      persist();
+      clearForm();
+      updateHeader();
+      renderTable();
+      exportExcel();
+    }
+
+    function persist() {
+      localStorage.setItem('waterReadings', JSON.stringify(readings));
+    }
+
+    // ================== TABLE ==================
+    function getFiltered() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const area = document.getElementById('filterArea').value;
+      const collector = document.getElementById('filterCollector').value;
+      const month = document.getElementById('filterMonth').value;
+
+      return readings.filter(r => {
+        if (search && !r.meterId.toLowerCase().includes(search) && !r.subName.toLowerCase().includes(search) && !(r.subCode || '').toLowerCase().includes(search)) return false;
+        if (area && r.area !== area) return false;
+        if (collector && r.collector !== collector) return false;
+        if (month && !r.readingDate.startsWith(month)) return false;
+        return true;
+      });
+    }
+
+    function renderTable() {
+      const filtered = getFiltered();
+      const container = document.getElementById('tableContainer');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>لا توجد قراءات تطابق البحث</p></div>`;
+        return;
+      }
+
+      let rows = filtered.map(r => {
+        const status = r.consumption === 0 ? ['status-zero', 'صفر'] :
+          r.consumption > 100 ? ['status-very-high', 'مرتفع جداً'] :
+            r.consumption > 50 ? ['status-high', 'مرتفع'] : ['status-normal', 'عادي'];
+        return `<tr>
+      <td><strong>${r.meterId}</strong></td>
+      <td>${r.subName}${r.subCode ? `<br><small style="color:var(--text-muted)">${r.subCode}</small>` : ''}</td>
+      <td>${r.area || '—'}</td>
+      <td>${r.readingDate}</td>
+      <td>${r.prevReading}</td>
+      <td><strong>${r.currReading}</strong></td>
+      <td><strong style="color:var(--primary)">${r.consumption} م³</strong></td>
+      <td><span class="status-badge ${status[0]}">${status[1]}</span></td>
+      <td>${r.collector || '—'}</td>
+      <td>${r.amount || '—'}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteReading(${r.id})">🗑️</button>
+        ${r.photoData ? `<button class="btn btn-sm" style="background:var(--surface2)" onclick="viewPhoto('${r.id}')">🖼️</button>` : ''}
+      </td>
+    </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>رقم العداد</th><th>المشترك</th><th>المنطقة</th><th>التاريخ</th>
+            <th>القراءة السابقة</th><th>القراءة الحالية</th><th>الاستهلاك</th>
+            <th>الحالة</th><th>المحصّل</th><th>المبلغ</th><th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:left;">إجمالي: ${filtered.length} قراءة</p>
+  `;
+    }
+
+    function deleteReading(id) {
+      if (!confirm('هل تريد حذف هذه القراءة؟')) return;
+      readings = readings.filter(r => r.id !== id);
+      persist();
+      renderTable();
+      updateHeader();
+      showToast('🗑️ تم الحذف');
+    }
+
+    function clearAll() {
+      if (!confirm('هل تريد حذف جميع القراءات؟ لا يمكن التراجع!')) return;
+      readings = [];
+      persist();
+      renderTable();
+      updateHeader();
+      showToast('🗑️ تم حذف جميع القراءات');
+    }
+
+    function viewPhoto(id) {
+      const r = readings.find(x => x.id == id);
+      if (!r || !r.photoData) return;
+      const w = window.open();
+      w.document.write(`<img src="${r.photoData}" style="max-width:100%">`);
+    }
+
+    // ================== EXPORT ==================
+    function buildExcelData(data) {
+      return data.map((r, i) => ({
+        'م': i + 1,
+        'رقم العداد': r.meterId,
+        'اسم المشترك': r.subName,
+        'رقم الاشتراك': r.subCode || '',
+        'المنطقة': r.area || '',
+        'تاريخ القراءة': r.readingDate,
+        'القراءة السابقة': r.prevReading,
+        'القراءة الحالية': r.currReading,
+        'الاستهلاك (م³)': r.consumption,
+        'المبلغ': r.amount || '',
+        'المحصّل': r.collector || '',
+        'الحالة': r.consumption === 0 ? 'صفر' : r.consumption > 100 ? 'مرتفع جداً' : r.consumption > 50 ? 'مرتفع' : 'عادي',
+        'ملاحظات': r.notes || ''
+      }));
+    }
+
+    function exportExcel() {
+      if (readings.length === 0) { showToast('⚠️ لا توجد بيانات للتصدير'); return; }
+      doExport(readings, 'قراءات_عدادات_المياه');
+    }
+
+    function exportFiltered() {
+      const filtered = getFiltered();
+      if (filtered.length === 0) { showToast('⚠️ لا توجد بيانات مطابقة'); return; }
+      doExport(filtered, 'قراءات_مفلترة');
+    }
+
+    function doExport(data, name) {
+      const wb = XLSX.utils.book_new();
+      const wsData = buildExcelData(data);
+      const ws = XLSX.utils.json_to_sheet(wsData, { origin: 'A2' });
+
+      // Title row
+      XLSX.utils.sheet_add_aoa(ws, [[`${settings.orgName || 'نظام عدادات المياه'} - تقرير القراءات`]], { origin: 'A1' });
+
+      // Column widths
+      ws['!cols'] = [
+        { wch: 5 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 20 }
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'القراءات');
+
+      // Summary sheet
+      const areas = {};
+      data.forEach(r => {
+        const a = r.area || 'غير محدد';
+        if (!areas[a]) areas[a] = { count: 0, total: 0 };
+        areas[a].count++;
+        areas[a].total += r.consumption;
+      });
+      const summaryData = Object.entries(areas).map(([area, v]) => ({
+        'المنطقة': area,
+        'عدد القراءات': v.count,
+        'إجمالي الاستهلاك (م³)': v.total.toFixed(1)
+      }));
+      const ws2 = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, ws2, 'ملخص المناطق');
+
+      const date = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `${name}_${date}.xlsx`);
+      showToast('✅ تم تصدير ملف Excel بنجاح');
+    }
+
+    // ================== REPORTS ==================
+    function renderReports() {
+      const total = readings.length;
+      const totalConsumption = readings.reduce((s, r) => s + r.consumption, 0);
+      const today = new Date().toISOString().split('T')[0];
+      const todayCount = readings.filter(r => r.readingDate === today).length;
+      const avgConsumption = total > 0 ? (totalConsumption / total).toFixed(1) : 0;
+
+      document.getElementById('hdr-total').textContent = total;
+      document.getElementById('hdr-today').textContent = todayCount;
+
+      document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card"><div class="s-icon">📊</div><div class="s-num">${total}</div><div class="s-label">إجمالي القراءات</div></div>
+    <div class="summary-card"><div class="s-icon">💧</div><div class="s-num">${totalConsumption.toFixed(0)}</div><div class="s-label">إجمالي الاستهلاك م³</div></div>
+    <div class="summary-card"><div class="s-icon">📅</div><div class="s-num">${todayCount}</div><div class="s-label">قراءات اليوم</div></div>
+    <div class="summary-card"><div class="s-icon">📈</div><div class="s-num">${avgConsumption}</div><div class="s-label">متوسط الاستهلاك م³</div></div>
+  `;
+
+      // Area report
+      const areas = {};
+      readings.forEach(r => {
+        const a = r.area || 'غير محدد';
+        if (!areas[a]) areas[a] = { count: 0, total: 0 };
+        areas[a].count++;
+        areas[a].total += r.consumption;
+      });
+
+      let areaHtml = Object.entries(areas).length === 0
+        ? '<div class="empty-state"><div class="icon">🗺️</div><p>لا توجد بيانات</p></div>'
+        : Object.entries(areas).map(([area, v]) => `
+      <div class="highlight-row">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700">${area}</span>
+          <span style="font-size:12px;color:var(--text-muted)">${v.count} قراءة</span>
+        </div>
+        <div style="background:var(--border);height:8px;border-radius:4px;margin-top:8px;overflow:hidden">
+          <div style="background:linear-gradient(90deg,var(--primary),var(--secondary));height:100%;width:${Math.min(100, (v.total / Math.max(...Object.values(areas).map(x => x.total)) * 100))}%;border-radius:4px;transition:width 0.5s"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--text-muted)">
+          <span>الاستهلاك الكلي: <strong style="color:var(--primary)">${v.total.toFixed(1)} م³</strong></span>
+          <span>المتوسط: <strong>${(v.total / v.count).toFixed(1)} م³</strong></span>
+        </div>
+      </div>`).join('');
+      document.getElementById('areaReport').innerHTML = areaHtml;
+
+      // Collector report
+      const collectors = {};
+      readings.forEach(r => {
+        const c = r.collector || 'غير محدد';
+        if (!collectors[c]) collectors[c] = 0;
+        collectors[c]++;
+      });
+
+      let collHtml = Object.entries(collectors).length === 0
+        ? '<div class="empty-state"><div class="icon">👤</div><p>لا توجد بيانات</p></div>'
+        : Object.entries(collectors).sort((a, b) => b[1] - a[1]).map(([c, count]) => `
+      <div class="highlight-row" style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700">👤 ${c}</span>
+        <span style="background:var(--primary);color:white;border-radius:20px;padding:4px 14px;font-size:13px;font-weight:700">${count} قراءة</span>
+      </div>`).join('');
+      document.getElementById('collectorReport').innerHTML = collHtml;
+    }
+
+    function updateHeader() {
+      document.getElementById('hdr-total').textContent = readings.length;
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('hdr-today').textContent = readings.filter(r => r.readingDate === today).length;
+    }
+
+    // ================== SETTINGS ==================
+    function addCollector() {
+      const val = document.getElementById('newCollector').value.trim();
+      if (!val) return;
+      if (!settings.collectors.includes(val)) {
+        settings.collectors.push(val);
+        saveSettingsData();
+        loadSettings();
+        document.getElementById('newCollector').value = '';
+        showToast('✅ تمت الإضافة');
+      }
+    }
+
+    function addArea() {
+      const val = document.getElementById('newArea').value.trim();
+      if (!val) return;
+      if (!settings.areas.includes(val)) {
+        settings.areas.push(val);
+        saveSettingsData();
+        loadSettings();
+        document.getElementById('newArea').value = '';
+        showToast('✅ تمت الإضافة');
+      }
+    }
+
+    function renderCollectorList() {
+      document.getElementById('collectorList').innerHTML = settings.collectors.map(c =>
+        `<span style="background:var(--surface2);padding:6px 14px;border-radius:20px;font-size:13px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border)">
+      👤 ${c}
+      <button onclick="removeCollector('${c}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px">✕</button>
+    </span>`).join('');
+    }
+
+    function renderAreaList() {
+      document.getElementById('areaList').innerHTML = settings.areas.map(a =>
+        `<span style="background:var(--surface2);padding:6px 14px;border-radius:20px;font-size:13px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border)">
+      🗺️ ${a}
+      <button onclick="removeArea('${a}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px">✕</button>
+    </span>`).join('');
+    }
+
+    function removeCollector(name) {
+      settings.collectors = settings.collectors.filter(c => c !== name);
+      saveSettingsData(); loadSettings();
+    }
+
+    function removeArea(name) {
+      settings.areas = settings.areas.filter(a => a !== name);
+      saveSettingsData(); loadSettings();
+    }
+
+    function saveSettings() {
+      settings.pricePerM3 = parseFloat(document.getElementById('pricePerM3').value) || 0;
+      settings.orgName = document.getElementById('orgName').value.trim();
+      saveSettingsData();
+      showToast('✅ تم حفظ الإعدادات');
+    }
+
+    function saveSettingsData() {
+      localStorage.setItem('waterSettings', JSON.stringify(settings));
+    }
+
+    function exportBackup() {
+      const data = JSON.stringify({ readings, settings }, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `water_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      showToast('✅ تم تصدير النسخة الاحتياطية');
+    }
+
+    function importBackup(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.readings) readings = data.readings;
+          if (data.settings) settings = data.settings;
+          persist();
+          saveSettingsData();
+          loadSettings();
+          renderTable();
+          updateHeader();
+          showToast('✅ تم استيراد النسخة الاحتياطية');
+        } catch { showToast('⚠️ خطأ في قراءة الملف'); }
+      };
+      reader.readAsText(file);
+    }
+
+    // ================== TOAST ==================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+
+</html>
