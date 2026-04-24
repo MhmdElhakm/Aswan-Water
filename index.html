@@ -703,32 +703,56 @@
         <div class="card-title">💧 تسجيل قراءة عداد جديدة</div>
         <div class="form-grid">
           <div class="form-group">
-            <label>رقم العداد *</label>
-            <input type="text" id="meterId" placeholder="مثال: M-0023" oninput="autoFillSubscriber()">
-          </div>
-          <div class="form-group">
-            <label>اسم المشترك *</label>
-            <input type="text" id="subName" placeholder="الاسم الكامل">
-          </div>
-          <div class="form-group">
-            <label>رقم المشترك</label>
-            <input type="text" id="subCode" placeholder="رقم الاشتراك">
-          </div>
-          <div class="form-group">
             <label>المنطقة</label>
             <select id="area">
               <option value="">-- اختر المنطقة --</option>
             </select>
           </div>
           <div class="form-group">
-            <label>تاريخ القراءة *</label>
-            <input type="date" id="readingDate">
-          </div>
-          <div class="form-group">
             <label>اسم المحصّل</label>
             <select id="collector">
               <option value="">-- اختر المحصّل --</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>مبنى</label>
+            <input type="text" id="building" placeholder="رقم أو اسم المبنى">
+          </div>
+          <div class="form-group">
+            <label>وحده</label>
+            <input type="text" id="unit" placeholder="رقم الوحدة">
+          </div>
+          <div class="form-group">
+            <label>رقم المشترك</label>
+            <input type="text" id="subCode" placeholder="رقم الاشتراك" oninput="autoFillSubscriber()">
+          </div>
+          <div class="form-group">
+            <label>اسم المشترك *</label>
+            <input type="text" id="subName" placeholder="الاسم الكامل">
+          </div>
+          <div class="form-group">
+            <label>عنوان المشترك</label>
+            <input type="text" id="subAddress" placeholder="العنوان التفصيلي">
+          </div>
+          <div class="form-group">
+            <label>نوع المشترك</label>
+            <select id="subType">
+              <option value="منزلي">منزلي</option>
+              <option value="تجاري">تجاري</option>
+              <option value="حكومي">حكومي</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>حالة العداد</label>
+            <select id="meterStatus">
+              <option value="سليم">سليم</option>
+              <option value="متوسط">متوسط</option>
+              <option value="متعزر">متعزر</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>تاريخ القراءة *</label>
+            <input type="date" id="readingDate">
           </div>
           <div class="form-group">
             <label>القراءة السابقة (م³)</label>
@@ -738,6 +762,7 @@
             <label>القراءة الحالية (م³) *</label>
             <input type="number" id="currReading" placeholder="0" min="0" oninput="calcConsumption()">
           </div>
+
 
           <div class="form-group full">
             <div class="consumption-display" id="consumptionBox">
@@ -778,7 +803,7 @@
         <div class="card-title">📋 سجل القراءات</div>
 
         <div class="filters">
-          <input type="text" id="searchInput" placeholder="🔍 بحث باسم أو رقم عداد..." oninput="renderTable()">
+          <input type="text" id="searchInput" placeholder="🔍 بحث باسم أو رقم المشترك.." oninput="renderTable()">
           <select id="filterArea" onchange="renderTable()">
             <option value="">كل المناطق</option>
           </select>
@@ -892,6 +917,7 @@
     // ================== STATE ==================
     let readings = JSON.parse(localStorage.getItem('waterReadings') || '[]');
     let settings = JSON.parse(localStorage.getItem('waterSettings') || '{"collectors":["حسين البدري "," محمود ربيع"],"areas":[" نجع العرب"," الكروم"],"pricePerM3":1.5,"orgName":"شركة مياه الشرب والصرف الصحي بدراو"}');
+    let currentEditId = null;
 
     // ================== INIT ==================
     document.addEventListener('DOMContentLoaded', () => {
@@ -973,12 +999,17 @@
       reader.readAsDataURL(file);
     }
 
+
+
     function autoFillSubscriber() {
-      const id = document.getElementById('meterId').value;
-      const existing = readings.find(r => r.meterId === id);
+      const code = document.getElementById('subCode').value;
+      const existing = readings.find(r => r.subCode === code);
       if (existing) {
         document.getElementById('subName').value = existing.subName || '';
-        document.getElementById('subCode').value = existing.subCode || '';
+        document.getElementById('building').value = existing.building || '';
+        document.getElementById('unit').value = existing.unit || '';
+        document.getElementById('subAddress').value = existing.subAddress || '';
+        document.getElementById('subType').value = existing.subType || 'منزلي';
         document.getElementById('area').value = existing.area || '';
         document.getElementById('prevReading').value = existing.currReading || '';
         calcConsumption();
@@ -986,7 +1017,10 @@
     }
 
     function clearForm() {
-      ['meterId', 'subName', 'subCode', 'notes'].forEach(id => document.getElementById(id).value = '');
+      currentEditId = null;
+      ['building', 'unit', 'subName', 'subAddress', 'subCode', 'notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('meterStatus').value = 'سليم';
+      document.getElementById('subType').value = 'منزلي';
       document.getElementById('prevReading').value = '';
       document.getElementById('currReading').value = '';
       document.getElementById('area').value = '';
@@ -998,8 +1032,12 @@
     }
 
     function getFormData() {
-      const meterId = document.getElementById('meterId').value.trim();
+      const building = document.getElementById('building').value.trim();
+      const unit = document.getElementById('unit').value.trim();
       const subName = document.getElementById('subName').value.trim();
+      const subAddress = document.getElementById('subAddress').value.trim();
+      const subType = document.getElementById('subType').value;
+      const meterStatus = document.getElementById('meterStatus').value;
       const currReading = parseFloat(document.getElementById('currReading').value);
       const prevReading = parseFloat(document.getElementById('prevReading').value) || 0;
       const readingDate = document.getElementById('readingDate').value;
@@ -1010,7 +1048,6 @@
       const photoEl = document.getElementById('photoPreview');
       const photoData = photoEl.style.display !== 'none' ? photoEl.src : '';
 
-      if (!meterId) { showToast('⚠️ يرجى إدخال رقم العداد'); return null; }
       if (!subName) { showToast('⚠️ يرجى إدخال اسم المشترك'); return null; }
       if (!readingDate) { showToast('⚠️ يرجى تحديد تاريخ القراءة'); return null; }
       if (isNaN(currReading)) { showToast('⚠️ يرجى إدخال القراءة الحالية'); return null; }
@@ -1020,8 +1057,8 @@
       const amount = (consumption * price).toFixed(2);
 
       return {
-        id: Date.now(),
-        meterId, subName, subCode, area, collector,
+        id: currentEditId || Date.now(),
+        building, unit, subName, subAddress, subType, subCode, area, collector, meterStatus,
         readingDate, prevReading, currReading, consumption,
         amount, notes, photoData,
         timestamp: new Date().toISOString()
@@ -1031,7 +1068,14 @@
     function saveReading() {
       const data = getFormData();
       if (!data) return;
-      readings.unshift(data);
+      if (currentEditId) {
+        const idx = readings.findIndex(r => r.id === currentEditId);
+        if (idx !== -1) readings[idx] = data;
+        else readings.unshift(data);
+        currentEditId = null;
+      } else {
+        readings.unshift(data);
+      }
       persist();
       clearForm();
       showToast('✅ تم حفظ القراءة بنجاح');
@@ -1042,7 +1086,14 @@
     function saveAndExport() {
       const data = getFormData();
       if (!data) return;
-      readings.unshift(data);
+      if (currentEditId) {
+        const idx = readings.findIndex(r => r.id === currentEditId);
+        if (idx !== -1) readings[idx] = data;
+        else readings.unshift(data);
+        currentEditId = null;
+      } else {
+        readings.unshift(data);
+      }
       persist();
       clearForm();
       updateHeader();
@@ -1062,7 +1113,7 @@
       const month = document.getElementById('filterMonth').value;
 
       return readings.filter(r => {
-        if (search && !r.meterId.toLowerCase().includes(search) && !r.subName.toLowerCase().includes(search) && !(r.subCode || '').toLowerCase().includes(search)) return false;
+        if (search && !(r.building || '').toLowerCase().includes(search) && !(r.subAddress || '').toLowerCase().includes(search) && !r.subName.toLowerCase().includes(search) && !(r.subCode || '').toLowerCase().includes(search)) return false;
         if (area && r.area !== area) return false;
         if (collector && r.collector !== collector) return false;
         if (month && !r.readingDate.startsWith(month)) return false;
@@ -1084,19 +1135,20 @@
           r.consumption > 100 ? ['status-very-high', 'مرتفع جداً'] :
             r.consumption > 50 ? ['status-high', 'مرتفع'] : ['status-normal', 'عادي'];
         return `<tr>
-      <td><strong>${r.meterId}</strong></td>
+      <td><strong>${r.building || '—'} / ${r.unit || '—'}</strong></td>
       <td>${r.subName}${r.subCode ? `<br><small style="color:var(--text-muted)">${r.subCode}</small>` : ''}</td>
       <td>${r.area || '—'}</td>
       <td>${r.readingDate}</td>
       <td>${r.prevReading}</td>
       <td><strong>${r.currReading}</strong></td>
       <td><strong style="color:var(--primary)">${r.consumption} م³</strong></td>
-      <td><span class="status-badge ${status[0]}">${status[1]}</span></td>
+      <td>${r.meterStatus || '—'}</td>
       <td>${r.collector || '—'}</td>
       <td>${r.amount || '—'}</td>
       <td>
-        <button class="btn btn-danger btn-sm" onclick="deleteReading(${r.id})">🗑️</button>
-        ${r.photoData ? `<button class="btn btn-sm" style="background:var(--surface2)" onclick="viewPhoto('${r.id}')">🖼️</button>` : ''}
+        <button class="btn btn-warning btn-sm" onclick="editReading(${r.id})" style="background:#FFB703;color:#fff;border:none;padding:5px 8px;border-radius:6px;font-size:11px;" title="تعديل">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteReading(${r.id})" style="border:none;background:#fee2e2;padding:5px 8px;border-radius:6px;font-size:11px;" title="حذف">🗑️</button>
+        ${r.photoData ? `<button class="btn btn-sm" style="background:var(--surface2);border:none;padding:5px 8px;border-radius:6px;font-size:11px;" onclick="viewPhoto('${r.id}')" title="عرض الصورة">🖼️</button>` : ''}
       </td>
     </tr>`;
       }).join('');
@@ -1106,9 +1158,9 @@
       <table>
         <thead>
           <tr>
-            <th>رقم العداد</th><th>المشترك</th><th>المنطقة</th><th>التاريخ</th>
+            <th>المبنى/الوحدة</th><th>المشترك</th><th>المنطقة</th><th>التاريخ</th>
             <th>القراءة السابقة</th><th>القراءة الحالية</th><th>الاستهلاك</th>
-            <th>الحالة</th><th>المحصّل</th><th>المبلغ</th><th>إجراء</th>
+            <th>حالة العداد</th><th>المحصّل</th><th>المبلغ</th><th>إجراء</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1116,6 +1168,36 @@
     </div>
     <p style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:left;">إجمالي: ${filtered.length} قراءة</p>
   `;
+    }
+    function editReading(id) {
+      const r = readings.find(x => x.id === id);
+      if (!r) return;
+      currentEditId = id;
+      document.getElementById('area').value = r.area || '';
+      document.getElementById('collector').value = r.collector || '';
+      document.getElementById('building').value = r.building || '';
+      document.getElementById('unit').value = r.unit || '';
+      document.getElementById('subCode').value = r.subCode || '';
+      document.getElementById('subName').value = r.subName || '';
+      document.getElementById('subAddress').value = r.subAddress || '';
+      document.getElementById('subType').value = r.subType || 'منزلي';
+      document.getElementById('meterStatus').value = r.meterStatus || 'سليم';
+      document.getElementById('readingDate').value = r.readingDate || '';
+      document.getElementById('prevReading').value = r.prevReading !== undefined ? r.prevReading : '';
+      document.getElementById('currReading').value = r.currReading !== undefined ? r.currReading : '';
+      document.getElementById('notes').value = r.notes || '';
+
+      if (r.photoData) {
+        document.getElementById('photoPreview').src = r.photoData;
+        document.getElementById('photoPreview').style.display = 'block';
+      } else {
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoPreview').src = '';
+      }
+
+      calcConsumption();
+      switchTab('add');
+      showToast('✏️ جاري التعديل...');
     }
 
     function deleteReading(id) {
@@ -1147,17 +1229,22 @@
     function buildExcelData(data) {
       return data.map((r, i) => ({
         'م': i + 1,
-        'رقم العداد': r.meterId,
+        'مبنى': r.building || '',
+        'وحده': r.unit || '',
         'اسم المشترك': r.subName,
+        'عنوان المشترك': r.subAddress || '',
+        'نوع المشترك': r.subType || '',
         'رقم الاشتراك': r.subCode || '',
         'المنطقة': r.area || '',
         'تاريخ القراءة': r.readingDate,
+        'حالة العداد': r.meterStatus || '',
         'القراءة السابقة': r.prevReading,
         'القراءة الحالية': r.currReading,
+
         'الاستهلاك (م³)': r.consumption,
         'المبلغ': r.amount || '',
         'المحصّل': r.collector || '',
-        'الحالة': r.consumption === 0 ? 'صفر' : r.consumption > 100 ? 'مرتفع جداً' : r.consumption > 50 ? 'مرتفع' : 'عادي',
+        'حالة الاستهلاك': r.consumption === 0 ? 'صفر' : r.consumption > 100 ? 'مرتفع جداً' : r.consumption > 50 ? 'مرتفع' : 'عادي',
         'ملاحظات': r.notes || ''
       }));
     }
